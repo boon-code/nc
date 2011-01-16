@@ -71,7 +71,7 @@ def main_dialog():
 	elif ret == _KEY_PULL:
 		pull_dialog()
 		return True
-    elif ret == _KEY_EXIT:
+	elif ret == _KEY_EXIT:
 		_client.exit()
 		return False
 	else:
