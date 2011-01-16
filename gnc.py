@@ -11,6 +11,7 @@ DIR = '/sdcard/download'
 _KEY_PUSH = 'push'
 _KEY_PULL = 'pull'
 _KEY_CANCEL = 'cancel'
+_KEY_EXIT = 'exit'
 
 _client = nc.NcClient(HOST, PORT)
 
@@ -57,9 +58,10 @@ def push_dialog():
 		path = os.path.join(DIR, ret)
 		_client.put(path) 
 
+
 def main_dialog():
 	droid.dialogCreateInput()
-	items = [_KEY_PUSH, _KEY_PULL, _KEY_CANCEL]
+	items = [_KEY_PUSH, _KEY_PULL, _KEY_CANCEL, _KEY_EXIT]
 	droid.dialogSetItems(items)
 	droid.dialogShow()
 	ret = _dialog_result(items)[1]
@@ -69,10 +71,13 @@ def main_dialog():
 	elif ret == _KEY_PULL:
 		pull_dialog()
 		return True
+    elif ret == _KEY_EXIT:
+		_client.exit()
+		return False
 	else:
 		return False
 
-	
+
 running = True
 while running:
 	running = main_dialog()
