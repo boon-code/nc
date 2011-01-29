@@ -8,7 +8,7 @@ import os
 import threading
 import optparse
 
-_VERSION = '0.0.1'
+_VERSION = '0.0.2b'
 
 _DEFAULT_PORT = 7642
 _DEFAULT_HOST = '127.0.0.1'
@@ -26,7 +26,6 @@ _RERR_TEXT = _RESPONSE_ERROR + " %s"
 
 _config = {}
 _KEY_DIR = 'dir'
-
 
 _running = True
 
@@ -96,6 +95,8 @@ class NcsrHandler(socketserver.StreamRequestHandler):
         self.__response_okay()
         for file in files:
             self.wfile.write(file + '\n')
+        self.wfile.write('\n')
+        self.wfile.flush()
     
     def __exec_get(self, args):
         
@@ -126,7 +127,7 @@ class NcsrHandler(socketserver.StreamRequestHandler):
             self.__response_okay()
             return True
         else:
-            self.__response_error(NcsrHandler.__ERR_NOT_IN_DIR
+            self.__response_error(NcsrHandler._ERR_NOT_IN_DIR
              % (dst, src))
             return False
     
@@ -142,8 +143,11 @@ class NcsrHandler(socketserver.StreamRequestHandler):
     def __send_file(self, name):
         
         path = os.path.join(self.__dir, name)
+        file_size = os.path.getsize(path)
         f = open(path, 'rb')
         try:
+            self.wfile.write("%d\n" % file_size)
+            self.wfile.flush()
             running = True
             while running:
                 buffer = f.read(_DEFAULT_READ_SIZE)
@@ -151,6 +155,10 @@ class NcsrHandler(socketserver.StreamRequestHandler):
                     self.wfile.write(buffer)
                 else:
                     running = False
+            
+            for i in xrange(_DEFAULT_READ_SIZE):
+                self.wfile.write('\n\n\n')
+            self.wfile.flush()
         finally:
             f.close()
     
@@ -185,110 +193,138 @@ class NcClient(object):
     _ERR_UNKNOWN = "Unknown error '%s'."
     _FILE_NOT_EXIST = "The file '%s' doesn't exists."
     
-    def __init__(self, host, port):
+    def __init__(self, host=_DEFAULT_HOST, port=_DEFAULT_PORT):
         self._addr = (host, port)
         self.error = None
+        self._conn = None
+        self._rfile = None
+        self._wfile = None
     
     def _start_cmd(self, cmd, args_line):
         
         cmdline = cmd + ' ' + args_line
         
-        conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        conn.connect(self._addr)
-        conn.send(cmdline + '\n')
+        self._conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._conn.connect(self._addr)
         
-        line = self._fetch_line(conn)
+        self._wfile = self._conn.makefile('wb')
+        self._rfile = self._conn.makefile('rb')
+        
+        self._wfile.write(cmdline + '\n')
+        self._wfile.flush()
+        line = self._rfile.readline().rstrip('\n')
         print "fetched line", line
         
         if line.startswith(_RESPONSE_OKAY):
             self.error = None
-            return conn
+            return True
         elif line.startswith(_RESPONSE_ERROR):
             self.error = line
-            return None
         else:
             self.error = NcClient._ERR_UNKNOWN % cmdline
-            return None
+        self._clean_up()
+        return False
     
-    def _fetch_line(self, conn):
+    def _clean_up(self):
         
-        line = []
-        while True:
-            buffer = conn.recv(1)
-            if (buffer == '') or (buffer == '\n'):
-                return ''.join(line)
-            else:
-                line.append(buffer)
+        if not (self._rfile is None):
+            self._rfile.close()
+            self._rfile = None
+        
+        self._close_tx()
+        
+        if not (self._conn is None):
+            self._conn.close()
+            self._conn = None
     
-    def put(self, path):
+    def _close_tx(self):
         
+        if not (self._wfile is None):
+            self._wfile.close()
+            self._wfile = None
+    
+    def _get_size(self, infoline):
+        return int(infoline)
+    
+    def put(self, filename, workdir):
+        
+        path = os.path.join(workdir, filename)
         if not os.path.exists(path):
             self.error = NcClient._FILE_NOT_EXIST % path
             return False
         
-        conn = self._start_cmd(_CMD_PUT, path)
-        if not (conn is None):
-            f = open(path, 'rb')
+        if self._start_cmd(_CMD_PUT, filename):
             try:
-                running = True
-                while running:
-                    buffer = f.read(_DEFAULT_READ_SIZE)
-                    if len(buffer) > 0:
-                        conn.send(buffer)
-                    else:
-                        running = False
-                return True
+                f = open(path, 'rb')
+                try:
+                    running = True
+                    while running:
+                        buffer = f.read(_DEFAULT_READ_SIZE)
+                        if len(buffer) > 0:
+                            self._wfile.write(buffer)
+                        else:
+                            running = False
+                    return True
+                finally:
+                    f.close()
             finally:
-                conn.close()
-                f.close()
+                self._clean_up()
         else:
             return False
     
-    def get(self, filename, destdir):
+    def get(self, filename, workdir):
         
-        conn = self._start_cmd(_CMD_GET, filename)
-        if not (conn is None):
-            path = os.path.join(destdir, filename)
-            f = open(path, 'wb')
+        if self._start_cmd(_CMD_GET, filename):
             try:
-                running = True
-                while running:
-                    buffer = conn.recv(_DEFAULT_READ_SIZE)
-                    if len(buffer) > 0:
-                        f.write(buffer)
-                    else:
-                        running = False
-                return True
+                self._close_tx()
+                path = os.path.join(workdir, filename)
+                f = open(path, 'wb')
+                try:
+                    running = True
+                    info_line = self._rfile.readline().strip('\n')
+                    total_size = self._get_size(info_line)
+                    rx_count = 0
+                    while True:
+                        buffer = self._rfile.read(_DEFAULT_READ_SIZE)
+                        write_cnt = len(buffer)
+                        rx_count += write_cnt
+                        
+                        if rx_count > total_size:
+                            write_cnt -= (rx_count - total_size)
+                            f.write(buffer[0:write_cnt])
+                            return True
+                        else:
+                            f.write(buffer)
+                finally:
+                    f.close()
             finally:
-                f.close()
-                conn.close()
+                self._clean_up()
         else:
             return False
     
     def list(self):
         
         lines = []
-        conn = self._start_cmd(_CMD_LIST, '')
-        if not (conn is None):
+        if self._start_cmd(_CMD_LIST, ''):
             try:
+                self._close_tx()
                 running = True
                 while running:
-                    line = self._fetch_line(conn)
+                    line = self._rfile.readline().strip('\n')
                     if len(line) > 0:
                         lines.append(line)
                     else:
                         running = False
                 return (True, lines)
             finally:
-                conn.close()
+                self._clean_up()
         else:
             return (False, lines)
     
     def exit(self):
         
-        conn = self._start_cmd(_CMD_EXIT, '')
-        if not (conn is None):
-            conn.close()
+        if self._start_cmd(_CMD_EXIT, ''):
+            self._clean_up()
             return True
         else:
             return False

@@ -57,8 +57,7 @@ def push_dialog():
 	ret = file_dialog(os.listdir(DIR))
 	
 	if not(ret is None):
-		path = os.path.join(DIR, ret)
-		_client.put(path) 
+		_client.put(ret, DIR) 
 
 
 def main_dialog():
