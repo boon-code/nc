@@ -21,7 +21,7 @@ def _dialog_result(list):
 	item = u''
 	which = u''
 	if not (ret is None):
-		result = ret.result
+		res = ret.result
 		if isinstance(res, dict):
 			if res.has_key('which'):
 				which = res['which']
@@ -33,7 +33,7 @@ def _dialog_result(list):
 
 def file_dialog(items):
 	droid.dialogCreateInput()
-	droid.dialogSetNegativeButton('cancel')
+	droid.dialogSetNegativeButtonText('cancel')
 	droid.dialogSetItems(items)
 	droid.dialogShow()
 	ret = _dialog_result(items)
@@ -45,7 +45,9 @@ def file_dialog(items):
 
 def pull_dialog():
 	list = _client.list()
-	ret = file_dialog(list[1])
+	print list
+	list = list[1]
+	ret = file_dialog(list)
 	
 	if not (ret is None):
 		_client.get(ret, DIR)
