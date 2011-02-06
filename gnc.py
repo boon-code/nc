@@ -24,19 +24,23 @@ def _dialog_result(list):
 	ret = droid.dialogGetResponse()
 	val = u''
 	which = u''
-	if not (ret is None):
-		res = ret.result
-		if isinstance(res, dict):
-			if res.has_key('which'):
-				which = res['which']
-			
-			if res.has_key('item'):
-				nr = res['item']
-				val = list[nr]
-			elif res.has_key('value'):
-				val = res['value']
-	
-	return (which, val)
+	try:
+		if not (ret is None):
+			res = ret.result
+			if isinstance(res, dict):
+				if res.has_key('which'):
+					which = res['which']
+				
+				if res.has_key('item'):
+					nr = res['item']
+					val = list[nr]
+				elif res.has_key('value'):
+					val = res['value']
+		
+		return (which, val)
+	except IndexError:
+		print "Index Error"
+		return _dialog_result(list)
 
 
 def file_dialog(items):
@@ -69,7 +73,7 @@ def push_dialog():
 
 
 def ip_dialog():
-	droid.dialogCreateInput('ip: ', LOCHOST)
+	droid.dialogCreateInput('ip: ', 'ip', LOCHOST)
 	droid.dialogSetNegativeButtonText('cancel')
 	droid.dialogSetPositiveButtonText('set')
 	droid.dialogShow()
@@ -83,11 +87,12 @@ def ip_dialog():
 
 def dir_dialog(path):
 	
-	items = ['..']
+	items = ['.', '..']
 	for i in os.listdir(path):
-		filepath = os.path.join(path, i)
+		filepath = os.path.join(path, i);print filepath
 		if os.path.isdir(filepath):
 			items.append(filepath)
+	droid.dialogCreateInput()
 	droid.dialogSetNegativeButtonText('cancel')
 	droid.dialogSetPositiveButtonText('ok')
 	droid.dialogSetItems(items)
@@ -99,7 +104,8 @@ def dir_dialog(path):
 	elif ret[0] == 'negative':
 		return None
 	else:
-		return os.path.realpath(dir_dialog(os.path.join(path, ret[1])))
+		f = os.path.realpath(os.path.join(path, ret[1]))
+		return dir_dialog(f)
 
 
 def work_dialog():
@@ -114,7 +120,8 @@ def work_dialog():
 
 def main_dialog():
 	droid.dialogCreateInput()
-	items = [_KEY_PUSH, _KEY_PULL, _KEY_IP, _KEY_CANCEL, _KEY_EXIT]
+	items = [_KEY_PUSH, _KEY_PULL, _KEY_IP
+			, _KEY_DIR, _KEY_CANCEL, _KEY_EXIT]
 	droid.dialogSetItems(items)
 	droid.dialogShow()
 	ret = _dialog_result(items)[1]
