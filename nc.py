@@ -8,7 +8,7 @@ import os
 import threading
 import optparse
 
-_VERSION = '0.0.2b'
+_VERSION = '0.0.3b'
 
 _DEFAULT_PORT = 7642
 _DEFAULT_HOST = '127.0.0.1'
@@ -252,8 +252,10 @@ class NcClient(object):
         if not os.path.exists(path):
             self.error = NcClient._FILE_NOT_EXIST % path
             return False
-        
-        if self._start_cmd(_CMD_PUT, filename):
+		
+		fstring = '"%s"' % filename
+		
+        if self._start_cmd(_CMD_PUT, fstring):
             try:
                 f = open(path, 'rb')
                 try:
@@ -274,7 +276,8 @@ class NcClient(object):
     
     def get(self, filename, workdir):
         
-        if self._start_cmd(_CMD_GET, filename):
+		fstring = '"%s"' % filename
+        if self._start_cmd(_CMD_GET, fstring):
             try:
                 self._close_tx()
                 path = os.path.join(workdir, filename)
