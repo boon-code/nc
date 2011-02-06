@@ -5,6 +5,7 @@ import os
 droid = android.Android()
 
 HOST = '127.0.0.1'
+LOCHOST = '192.168.1.200'
 PORT = 7642
 DIR = '/sdcard/download'
 
@@ -12,23 +13,30 @@ _KEY_PUSH = 'push'
 _KEY_PULL = 'pull'
 _KEY_CANCEL = 'cancel'
 _KEY_EXIT = 'exit'
+_KEY_IP = 'change ip'
+_KEY_DIR = 'change dir'
 
 _client = nc.NcClient(HOST, PORT)
+_work = DIR
 
 
 def _dialog_result(list):
 	ret = droid.dialogGetResponse()
-	item = u''
+	val = u''
 	which = u''
 	if not (ret is None):
 		res = ret.result
 		if isinstance(res, dict):
 			if res.has_key('which'):
 				which = res['which']
-			elif res.has_key('item'):
+			
+			if res.has_key('item'):
 				nr = res['item']
-				item = list[nr]
-	return (which, item)
+				val = list[nr]
+			elif res.has_key('value'):
+				val = res['value']
+	
+	return (which, val)
 
 
 def file_dialog(items):
@@ -50,19 +58,63 @@ def pull_dialog():
 	ret = file_dialog(list)
 	
 	if not (ret is None):
-		_client.get(ret, DIR)
+		_client.get(ret, _work)
 
 
 def push_dialog():
-	ret = file_dialog(os.listdir(DIR))
+	ret = file_dialog(os.listdir(_work))
 	
 	if not(ret is None):
-		_client.put(ret, DIR) 
+		_client.put(ret, _work)
+
+
+def ip_dialog():
+	droid.dialogCreateInput('ip: ', LOCHOST)
+	droid.dialogSetNegativeButtonText('cancel')
+	droid.dialogSetPositiveButtonText('set')
+	droid.dialogShow()
+	
+	ret = _dialog_result([])
+	if ret[0] == 'positive':
+		global _client
+		print ret[1]
+		_client = nc.NcClient(ret[1], PORT)
+
+
+def dir_dialog(path):
+	
+	items = ['..']
+	for i in os.listdir(path):
+		filepath = os.path.join(path, i)
+		if os.path.isdir(filepath):
+			items.append(filepath)
+	droid.dialogSetNegativeButtonText('cancel')
+	droid.dialogSetPositiveButtonText('ok')
+	droid.dialogSetItems(items)
+	droid.dialogShow()
+	
+	ret = _dialog_result(items)
+	if ret[0] == 'positive':
+		return path
+	elif ret[0] == 'negative':
+		return None
+	else:
+		return os.path.realpath(dir_dialog(os.path.join(path, ret[1])))
+
+
+def work_dialog():
+	
+	global _work
+	droid.makeToast("working dir is %s" % _work)
+	res = dir_dialog(_work)
+	if not (res is None):
+		_work = res
+		print "set working dir to %s" % _work
 
 
 def main_dialog():
 	droid.dialogCreateInput()
-	items = [_KEY_PUSH, _KEY_PULL, _KEY_CANCEL, _KEY_EXIT]
+	items = [_KEY_PUSH, _KEY_PULL, _KEY_IP, _KEY_CANCEL, _KEY_EXIT]
 	droid.dialogSetItems(items)
 	droid.dialogShow()
 	ret = _dialog_result(items)[1]
@@ -75,6 +127,12 @@ def main_dialog():
 	elif ret == _KEY_EXIT:
 		_client.exit()
 		return False
+	elif ret == _KEY_IP:
+		ip_dialog();
+		return True
+	elif ret == _KEY_DIR:
+		work_dialog()
+		return True
 	else:
 		return False
 
