@@ -252,9 +252,8 @@ class NcClient(object):
         if not os.path.exists(path):
             self.error = NcClient._FILE_NOT_EXIST % path
             return False
-		
-		fstring = '"%s"' % filename
-		
+        
+        fstring = '"%s"' % filename
         if self._start_cmd(_CMD_PUT, fstring):
             try:
                 f = open(path, 'rb')
@@ -276,7 +275,7 @@ class NcClient(object):
     
     def get(self, filename, workdir):
         
-		fstring = '"%s"' % filename
+        fstring = '"%s"' % filename
         if self._start_cmd(_CMD_GET, fstring):
             try:
                 self._close_tx()
