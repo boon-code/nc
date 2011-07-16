@@ -8,7 +8,7 @@ import os
 import threading
 import optparse
 
-_VERSION = '0.0.3b'
+_VERSION = '0.0.4b'
 
 _DEFAULT_PORT = 7642
 _DEFAULT_HOST = '127.0.0.1'
@@ -332,13 +332,14 @@ class NcClient(object):
             return False
 
 
-def server_main(host, port, workdir):
-    _config[_KEY_DIR] = workdir
-    server = socketserver.TCPServer((host, port), NcsrHandler)
+def server_main(host, port, workdir, verbose):
     
+    _config[_KEY_DIR] = workdir
+    if verbose:
+        print "host ip: %s" % socket.gethostbyname(host)
+    server = socketserver.TCPServer((host, port), NcsrHandler)
     while _running:
         server.handle_request()
-    
     print "Bye from nc!"
 
 
@@ -363,12 +364,17 @@ if __name__ == "__main__":
         dest="version", help="shows version number only..."
     )
     
+    parser.add_option("-v", "--verbose", action="store_true",
+        dest="verbose", help="verbose output"
+    )
+    
     parser.set_defaults(port=_DEFAULT_PORT, host=_DEFAULT_HOST
-        , work='.', version=False)
+        , work='.', version=False, verbose=False)
     
     options, args = parser.parse_args()
     
     if options.version:
         print _VERSION
     else:
-        server_main(options.host, options.port, options.work)
+        server_main(options.host, options.port, options.work
+        		, options.verbose)
