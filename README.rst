@@ -1,6 +1,6 @@
-==
+===
 nc
-==
+===
 This is a simple network connection program to copy files.
 The second script, *gnc.py* is only used on an android device. You can easily 
 copy files of one directory from your android phone, or push them to your 
