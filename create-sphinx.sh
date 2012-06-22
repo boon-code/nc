@@ -1,7 +1,8 @@
 #!/bin/bash
 
 cd $(dirname $0)
-cd sphinx
-mkdir -p ./build/html
-touch ./build/html/.nojekyll
-make html
+mkdir -p ./sphinx/build/html
+touch ./sphinx/build/html/.nojekyll
+make --directory=sphinx/ html
+tar cz --directory=./sphinx/build/html/ . > documentation.tgz
+
