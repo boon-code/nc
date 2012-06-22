@@ -1,4 +1,4 @@
 ==================
 nc - documentation
 ==================
-This will become the documentation of **nc**.
+This is the documentation of **nc**.

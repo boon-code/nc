@@ -1,0 +1,6 @@
+# Sphinx inventory version 1
+# Project: nc
+# Version: 0.1
+nc mod index.html
+nc.NcsrHandler class index.html
+nc.NcClient class index.html
