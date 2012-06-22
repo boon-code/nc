@@ -1,4 +1,17 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""
+This module includes a client and a server class.
+The client can request files (pull) from server or
+copy files to server (push). Only the server can
+currently be started from this file.
+(I think it doesn't make any sense to support a
+command line interface for the client, but maybe I
+will include one, since it's not that effort...
+Anyway, it would make much more sense to include a
+gui for the client... I should do that...)
+"""
 
 import sys
 import socket
@@ -8,7 +21,12 @@ import os
 import threading
 import optparse
 
-_VERSION = '0.0.4b'
+
+__author__ = 'Manuel Huber'
+__copyright__ = "Copyright (c) 2012 Manuel Huber."
+__license__ = 'GPLv3'
+__version__ = '0.1.0'
+__docformat__ = "restructuredtext en"
 
 _DEFAULT_PORT = 7642
 _DEFAULT_HOST = '127.0.0.1'
@@ -30,8 +48,8 @@ _KEY_DIR = 'dir'
 _running = True
 
 class NcsrHandler(socketserver.StreamRequestHandler):
-    """
-    'Net Cat (like) Server Request Handler'
+    """Net Cat (like) Server Request Handler
+    
     This defines the request handler for NcServer.
     It will always try to read the command, and
     then do as specified.
@@ -189,6 +207,12 @@ class NcsrHandler(socketserver.StreamRequestHandler):
 
 
 class NcClient(object):
+    """Net-cat like client
+
+    This object represents the client part
+    of this software. It will use the services
+    offered by the server.
+    """
     
     _ERR_UNKNOWN = "Unknown error '%s'."
     _FILE_NOT_EXIST = "The file '%s' doesn't exists."
@@ -374,7 +398,7 @@ if __name__ == "__main__":
     options, args = parser.parse_args()
     
     if options.version:
-        print _VERSION
+        print __version__
     else:
         server_main(options.host, options.port, options.work
                 , options.verbose)

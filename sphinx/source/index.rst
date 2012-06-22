@@ -11,6 +11,21 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+.. automodule:: nc
+
+The server-class
+================
+
+.. autoclass:: nc.NcsrHandler
+
+
+The client-class
+================
+
+.. autoclass:: nc.NcClient
+
+
+
 Indices and tables
 ==================
 
