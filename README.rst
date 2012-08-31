@@ -10,7 +10,11 @@ Details
 -------
 This is a quite simple program. You first have to start it on your computer 
 and then start gnc.py on your android phone. Now you can access the current
-directory (or some other if specified). Normally, you should use it over an ssh tunnel (default setting). Therefore you need some tool like ConnectBot. 
+directory (or some other if specified). Normally, you should use it over an ssh tunnel (default setting). Therefore you need some tool like ConnectBot.
+
+.. _here : http://boon-code.github.com/nc/
+
+You can find the documentation here_
 
 Futur
 -----
